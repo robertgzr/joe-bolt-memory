@@ -62,35 +62,38 @@ func NewMemory(path string, opts ...Option) (joe.Memory, error) {
 	return m, nil
 }
 
-type bucketkey struct {
+// pathkey is the structure used to encode/decode a bolt bucket and key.
+// It will extract the `bucket` name from the root of the path and use the
+// remaining components as the key.
+type pathkey struct {
 	bucket, key []byte
 }
 
-func (bk *bucketkey) String() string {
+func (bk *pathkey) String() string {
 	return path.Join(string(bk.bucket), string(bk.key))
 }
 
-func BucketkeyFromString(in string) *bucketkey {
+func pathkeyFromString(in string) *pathkey {
 	bucket, key := path.Split(in)
 	if bucket == "" {
 		bucket = "_joe"
 	}
-	return &bucketkey{bucket: []byte(bucket), key: []byte(key)}
+	return &pathkey{bucket: []byte(bucket), key: []byte(key)}
 }
 
 func (m *memory) Set(key string, value []byte) error {
-	bk := BucketkeyFromString(key)
+	pk := pathkeyFromString(key)
 	m.logger.Debug("Database access: Put",
-		zap.ByteString("bucket", bk.bucket),
-		zap.ByteString("key", bk.key),
+		zap.ByteString("bucket", pk.bucket),
+		zap.ByteString("key", pk.key),
 	)
 
 	err := m.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists(bk.bucket)
+		b, err := tx.CreateBucketIfNotExists(pk.bucket)
 		if err != nil {
 			return err
 		}
-		return b.Put(bk.key, value)
+		return b.Put(pk.key, value)
 	})
 	if err != nil {
 		return err
@@ -100,15 +103,15 @@ func (m *memory) Set(key string, value []byte) error {
 
 func (m *memory) Get(key string) ([]byte, bool, error) {
 	var value []byte
-	bk := BucketkeyFromString(key)
+	pk := pathkeyFromString(key)
 	m.logger.Debug("Database access: Get",
-		zap.ByteString("bucket", bk.bucket),
-		zap.ByteString("key", bk.key),
+		zap.ByteString("bucket", pk.bucket),
+		zap.ByteString("key", pk.key),
 	)
 
 	err := m.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bk.bucket)
-		value = b.Get(bk.key)
+		b := tx.Bucket(pk.bucket)
+		value = b.Get(pk.key)
 		return nil
 	})
 	if err != nil {
@@ -121,15 +124,15 @@ func (m *memory) Get(key string) ([]byte, bool, error) {
 }
 
 func (m *memory) Delete(key string) (bool, error) {
-	bk := BucketkeyFromString(key)
+	pk := pathkeyFromString(key)
 	m.logger.Debug("Database access: Delete",
-		zap.ByteString("bucket", bk.bucket),
-		zap.ByteString("key", bk.key),
+		zap.ByteString("bucket", pk.bucket),
+		zap.ByteString("key", pk.key),
 	)
 
 	err := m.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bk.bucket)
-		return b.Delete(bk.key)
+		b := tx.Bucket(pk.bucket)
+		return b.Delete(pk.key)
 	})
 	if err != nil {
 		if err == bolt.ErrBucketNotFound || os.IsNotExist(err) {
@@ -145,8 +148,8 @@ func (m *memory) Keys() ([]string, error) {
 	err := m.db.View(func(tx *bolt.Tx) error {
 		return tx.ForEach(func(bucket []byte, b *bolt.Bucket) error {
 			return b.ForEach(func(key, _ []byte) error {
-				bk := &bucketkey{bucket: bucket, key: key}
-				keys = append(keys, bk.String())
+				pk := &pathkey{bucket: bucket, key: key}
+				keys = append(keys, pk.String())
 				return nil
 			})
 		})
