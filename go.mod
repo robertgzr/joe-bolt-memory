@@ -1,4 +1,4 @@
-module github.com/robertgzr/joe-memory-bolt
+module github.com/robertgzr/joe-bolt-memory
 
 go 1.12
 
