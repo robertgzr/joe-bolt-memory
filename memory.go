@@ -111,6 +111,9 @@ func (m *memory) Get(key string) ([]byte, bool, error) {
 
 	err := m.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(pk.bucket)
+		if b == nil {
+			return bolt.ErrBucketNotFound
+		}
 		value = b.Get(pk.key)
 		return nil
 	})
@@ -132,6 +135,9 @@ func (m *memory) Delete(key string) (bool, error) {
 
 	err := m.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(pk.bucket)
+		if b == nil {
+			return bolt.ErrBucketNotFound
+		}
 		return b.Delete(pk.key)
 	})
 	if err != nil {

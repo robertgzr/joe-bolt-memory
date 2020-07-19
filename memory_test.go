@@ -1,6 +1,7 @@
 package bolt
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -10,17 +11,16 @@ import (
 )
 
 func TestMemory_smoke(t *testing.T) {
-	now := time.Now().String()
-	dbpath := "/tmp/joe_memory_test_" + now
-
-	m, err := NewMemory("/tmp/joe_memory_test_" + now)
+	dbpath, err := ioutil.TempFile("", "joe-memory-test-")
+	assert.NilError(t, err)
+	defer os.Remove(dbpath.Name())
+	m, err := NewMemory(dbpath.Name())
 	assert.NilError(t, err)
 	defer m.Close()
-	defer os.Remove(dbpath)
 
 	var (
 		key   = "_bucket_/_key_"
-		value = []byte(now)
+		value = []byte(time.Now().String())
 	)
 
 	err = m.Set(key, value)
@@ -42,4 +42,16 @@ func TestMemory_smoke(t *testing.T) {
 	keys2, err := m.Keys()
 	assert.NilError(t, err)
 	assert.Assert(t, !cmp.Contains(keys2, key)().Success())
+}
+
+func TestGetMissingKey(t *testing.T) {
+	dbpath, err := ioutil.TempFile("", "joe-memory-test-")
+	assert.NilError(t, err)
+	defer os.Remove(dbpath.Name())
+	m, err := NewMemory(dbpath.Name())
+	assert.NilError(t, err)
+	defer m.Close()
+
+	_, ok, err := m.Get("_key_")
+	assert.Assert(t, !ok)
 }
