@@ -77,6 +77,8 @@ func pathkeyFromString(in string) *pathkey {
 	bucket, key := path.Split(in)
 	if bucket == "" {
 		bucket = "_joe"
+	} else {
+		bucket = bucket[:len(bucket)-1] // trim trailing slash
 	}
 	return &pathkey{bucket: []byte(bucket), key: []byte(key)}
 }

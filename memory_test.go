@@ -53,5 +53,17 @@ func TestGetMissingKey(t *testing.T) {
 	defer m.Close()
 
 	_, ok, err := m.Get("_key_")
+	assert.NilError(t, err)
 	assert.Assert(t, !ok)
+}
+
+func TestPathKeyFromString(t *testing.T) {
+	var (
+		input        = "_bucket_/_key_"
+		expectBucket = "_bucket_"
+		expectKey    = "_key_"
+	)
+	pk := pathkeyFromString(input)
+	assert.Equal(t, string(pk.bucket), expectBucket)
+	assert.Equal(t, string(pk.key), expectKey)
 }
