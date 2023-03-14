@@ -8,6 +8,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	go.etcd.io/bbolt v1.3.5
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )
